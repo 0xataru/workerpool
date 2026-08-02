@@ -50,19 +50,30 @@ bump: ## Release bump (VERSION=X.Y.Z) — syncs VERSION, CHANGELOG, README badge
 	@test -n "$(VERSION)" || (echo "Usage: make bump VERSION=0.2.0" && exit 1)
 	@./scripts/bump.sh $(VERSION)
 
-tag: check ## Commit the bump and create the vX.Y.Z tag (does not push)
+# Tags whatever VERSION currently says. The bump commit may or may not already be
+# in history: if the release files are still dirty they get committed here, and if
+# they were committed by hand the tag simply lands on HEAD. What is never allowed
+# is tagging a tree that does not match the commit — a published Go tag is
+# immutable, so it has to point at exactly what was tested.
+tag: check ## Create the vX.Y.Z tag from VERSION (does not push)
 	@v=$$(tr -d '[:space:]' < $(VERSION_FILE)); \
+	git rev-parse HEAD >/dev/null 2>&1 || { echo "no commits yet: commit the source first"; exit 1; }; \
 	if git rev-parse -q --verify "refs/tags/v$$v" >/dev/null 2>&1; then \
-		echo "tag v$$v already exists"; exit 1; \
+		echo "tag v$$v already exists — bump first, or delete the tag if it was never pushed"; exit 1; \
 	fi; \
-	if [ -z "$$(git status --porcelain -- $(VERSION_FILE) CHANGELOG.md README.md)" ]; then \
-		echo "nothing to release: run 'make bump VERSION=X.Y.Z' first"; exit 1; \
+	other=$$(git status --porcelain -- . ':!$(VERSION_FILE)' ':!CHANGELOG.md' ':!README.md'); \
+	if [ -n "$$other" ]; then \
+		echo "uncommitted changes outside the release files:"; echo "$$other"; \
+		echo "commit or stash them first — the tag must match what was tested"; exit 1; \
 	fi; \
-	git add $(VERSION_FILE) CHANGELOG.md README.md && \
-	git commit -m "release v$$v" && \
+	if [ -n "$$(git status --porcelain -- $(VERSION_FILE) CHANGELOG.md README.md)" ]; then \
+		git add $(VERSION_FILE) CHANGELOG.md README.md && git commit -m "release v$$v" || exit 1; \
+	else \
+		echo "release files already committed, tagging HEAD"; \
+	fi; \
 	git tag -a "v$$v" -m "v$$v" && \
 	echo && \
-	echo "Tagged v$$v. Publish with:" && \
+	echo "Tagged v$$v at $$(git rev-parse --short HEAD). Publish with:" && \
 	echo "  git push --follow-tags"
 
 clean: ## Remove build and coverage artefacts
