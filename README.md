@@ -1,14 +1,13 @@
 # workerpool
 
 <p align="center">
-  <a href="https://github.com/0xataru/workerpool"><img src="https://img.shields.io/badge/github-0xataru%2Fworkerpool-181717?logo=github" alt="GitHub" /></a>
-  <a href="VERSION"><img src="https://img.shields.io/badge/version-0.0.2-blue" alt="Version" /></a>
+  <a href="VERSION"><img src="https://img.shields.io/badge/version-0.0.3-blue" alt="Version" /></a>
   <a href="https://pkg.go.dev/github.com/0xataru/workerpool"><img src="https://pkg.go.dev/badge/github.com/0xataru/workerpool.svg" alt="Go Reference" /></a>
   <a href="https://github.com/0xataru/workerpool/actions/workflows/ci.yml"><img src="https://github.com/0xataru/workerpool/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <a href="https://goreportcard.com/report/github.com/0xataru/workerpool"><img src="https://goreportcard.com/badge/github.com/0xataru/workerpool" alt="Go Report Card" /></a>
   <a href="go.mod"><img src="https://img.shields.io/badge/go-1.23+-00ADD8?logo=go&logoColor=white" alt="Go 1.23+" /></a>
   <a href="go.mod"><img src="https://img.shields.io/badge/dependencies-none-success" alt="Zero dependencies" /></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="License: MIT" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue?logo=apache&logoColor=white" alt="License: Apache 2.0" /></a>
 </p>
 
 Run a function over many inputs on a fixed number of goroutines.
@@ -112,6 +111,61 @@ What this does not mean: the race detector reports races it observes, not races
 that exist. This package has no known defects and its tests are demonstrably
 able to catch defects of this class — that is a different claim from proof.
 
+## Performance
+
+Measured with `make bench` on an 8-core machine, 10 000 inputs and a process
+function that does nothing, so every number is pure overhead:
+
+|                                             | ns per input | allocations |
+| ------------------------------------------- | ------------ | ----------- |
+| Plain `for` loop, no concurrency            | 0.6          | 1           |
+| `Map`, 8 workers                            | **40**       | 11          |
+| `Map`, 64 workers                           | 42           | 67          |
+| Goroutine per input, bounded by a semaphore | 282          | 10 003      |
+
+Allocations are the bigger story: `Map` allocates a constant number regardless of
+how many inputs there are, because it reuses a fixed set of workers and hands
+work out through an atomic counter rather than a channel.
+
+None of that matters unless the work per input is small. The break-even point
+against a plain loop is around **60ns of work per input** — below that, do not
+use a pool at all; well above it, the pool scales:
+
+| Work per input | Plain loop | `Map`, 8 workers |
+| -------------- | ---------- | ---------------- |
+| 5ns            | 4.8        | 39 (pool loses)  |
+| 60ns           | 60         | 48               |
+| 740ns          | 736        | 149              |
+| 7.4µs          | 7443       | 1251             |
+
+For anything doing I/O — an HTTP call, a database query, reading a file — the
+overhead is irrelevant and the only question is how many workers the other side
+tolerates.
+
+Numbers come from one machine and a single run each; use `benchstat` over
+`-count=10` before drawing conclusions from small differences.
+
+### Against the alternatives
+
+Same task — 10 000 inputs, 8 workers, one result per input in input order:
+
+| | ns per input | allocs/op |
+| --- | --- | --- |
+| [conc](https://github.com/sourcegraph/conc) `iter.Map` | 39.2 – 39.8 | 13 |
+| **this package** | 40.0 – 40.8 | 12 |
+| [errgroup](https://pkg.go.dev/golang.org/x/sync/errgroup) + `SetLimit` | 305 – 310 | 20 003 |
+| [pond](https://github.com/alitto/pond) v2 | 314 – 324 | 43 472 |
+| [ants](https://github.com/panjf2000/ants) v2 | 343 – 346 | 0 |
+
+We are **tied for fastest, not fastest**: `conc` matches us within noise, and both
+are about 8× ahead of the rest. `ants` allocates nothing once its pool is reused,
+which is what it is for. The reasons to pick this package are elsewhere —
+maintenance, the streaming API, per-input results — and the benchmarks exist to
+show that picking it costs nothing in speed.
+
+Full table, methodology and where each comparison is unfair:
+[`benchmarks/README.md`](benchmarks/README.md).
+
 ## When you do not need this
 
 - **One input.** Just call the function.
@@ -128,4 +182,4 @@ Go 1.23 or newer (`Stream` uses `iter.Seq`). No third-party dependencies.
 
 ## License
 
-MIT
+[Apache License 2.0](LICENSE)

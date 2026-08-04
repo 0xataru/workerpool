@@ -6,6 +6,27 @@ Versions below 1.0.0 may break the API between releases.
 
 ## [Unreleased]
 
+## [0.0.3] - 2026-08-04
+
+### Changed
+
+- `Map` dispatches work through an atomic counter instead of a channel. Overhead
+  per input drops from ~330ns to ~40ns at 8 workers, and the point where the pool
+  beats a plain sequential loop moves from ~1µs of work per input to ~60ns. Load
+  balancing is unchanged — workers still claim the next index as they free up.
+- `Map` no longer allocates a bookkeeping slice: the inputs it finished are the
+  prefix below the counter, so which ones were skipped follows from the counter
+  alone.
+
+- Licence changed from MIT to Apache License 2.0. Copies obtained under MIT stay
+  under MIT — relicensing only applies going forward.
+
+### Added
+
+- `benchmarks/` — a separate module comparing this package against conc, pond,
+  ants and errgroup on the same task. Separate so the library keeps zero
+  dependencies; the root `./...` does not descend into it.
+
 ## [0.0.2] - 2026-08-02
 
 ### Added
