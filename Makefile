@@ -1,6 +1,6 @@
 VERSION_FILE := VERSION
 CURRENT := $(shell tr -d '[:space:]' < $(VERSION_FILE) 2>/dev/null)
-STATICCHECK := honnef.co/go/tools/cmd/staticcheck@2025.1.1
+STATICCHECK := honnef.co/go/tools/cmd/staticcheck@2026.2.1
 
 .DEFAULT_GOAL := help
 

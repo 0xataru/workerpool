@@ -62,10 +62,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Not stable: staticcheck lags each Go release, and 2026.2.1 cannot read
+      # Go 1.27 export data. Move this forward once a staticcheck release can.
       - uses: actions/setup-go@v5
         with:
-          go-version: stable
+          go-version: '1.26'
 
       # Run via go run so the linter never becomes a dependency of the module.
       - name: staticcheck
-        run: go run honnef.co/go/tools/cmd/staticcheck@2025.1.1 ./...
+        run: go run honnef.co/go/tools/cmd/staticcheck@2026.2.1 ./...
