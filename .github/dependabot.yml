@@ -1,0 +1,20 @@
+version: 2
+updates:
+  # The library itself has no dependencies; these are the CI actions.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ['*']
+
+  # The competitors in the comparison benchmarks. Keeping them current keeps the
+  # comparison honest.
+  - package-ecosystem: gomod
+    directory: /benchmarks
+    schedule:
+      interval: monthly
+    groups:
+      benchmarks:
+        patterns: ['*']

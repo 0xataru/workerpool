@@ -1,0 +1,23 @@
+name: Feature request
+description: Suggest a change to the API or behaviour
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The API is kept small on purpose. Before proposing an option, please check whether
+        wrapping `process` already covers it — see the [Recipes](https://github.com/0xataru/workerpool#recipes).
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What are you trying to do, and why is it awkward today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: What would the API look like? Why can't a wrapper around `process` do it?
+    validations:
+      required: true
