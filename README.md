@@ -6,7 +6,6 @@
   <a href="https://github.com/0xataru/workerpool/actions/workflows/ci.yml"><img src="https://github.com/0xataru/workerpool/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <a href="https://github.com/0xataru/workerpool/actions/workflows/coverage.yml"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/0xataru/workerpool/badges/coverage.json" alt="Coverage" /></a>
   <a href="https://scorecard.dev/viewer/?uri=github.com/0xataru/workerpool"><img src="https://api.scorecard.dev/projects/github.com/0xataru/workerpool/badge" alt="OpenSSF Scorecard" /></a>
-  <a href="https://goreportcard.com/report/github.com/0xataru/workerpool"><img src="https://goreportcard.com/badge/github.com/0xataru/workerpool" alt="Go Report Card" /></a>
   <a href="go.mod"><img src="https://img.shields.io/badge/go-1.23+-00ADD8?logo=go&logoColor=white" alt="Go 1.23+" /></a>
   <a href="go.mod"><img src="https://img.shields.io/badge/dependencies-none-success" alt="Zero dependencies" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue?logo=apache&logoColor=white" alt="License: Apache 2.0" /></a>
