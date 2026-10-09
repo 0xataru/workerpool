@@ -112,6 +112,9 @@ is the evidence:
 - **The panic policy is tested too**, in a child process, since an unrecovered
   panic takes the test binary with it.
 
+Why each of these is there, and what the code they test looks like:
+[`docs/design.md`](docs/design.md).
+
 What this does not mean: the race detector reports races it observes, not races
 that exist. This package has no known defects and its tests are demonstrably
 able to catch defects of this class — that is a different claim from proof.
