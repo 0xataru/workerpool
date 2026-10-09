@@ -15,9 +15,9 @@ jobs:
         # go.mod is a promise, so it has to keep being tested.
         go: ['1.23', 'stable']
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version: ${{ matrix.go }}
 
@@ -46,9 +46,9 @@ jobs:
       matrix:
         gomaxprocs: [1, 2, 4]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version: stable
 
@@ -60,11 +60,11 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Not stable: staticcheck lags each Go release, and 2026.2.1 cannot read
       # Go 1.27 export data. Move this forward once a staticcheck release can.
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version: '1.26'
 
