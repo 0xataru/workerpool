@@ -19,7 +19,7 @@ jobs:
       security-events: write # upload results to code scanning
       id-token: write # publish results to the public Scorecard API
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
 
