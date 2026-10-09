@@ -6,6 +6,17 @@ Versions below 1.0.0 may break the API between releases.
 
 ## [Unreleased]
 
+### Added
+
+- Fuzz targets `FuzzMap` and `FuzzStream`, and `make fuzz`
+- Tested examples for the things deliberately left out of the API: retries,
+  fail-fast, cancellation, rate limiting and progress reporting; listed in a
+  new Recipes section of the README
+- `docs/design.md` — how the package works and how each guarantee is tested
+- `SECURITY.md`, `CONTRIBUTING.md`, issue and pull request templates
+- CI: coverage badge, benchstat comparison on pull requests, OpenSSF Scorecard,
+  Dependabot for actions and the benchmark module
+
 ## [0.0.3] - 2026-08-04
 
 ### Changed

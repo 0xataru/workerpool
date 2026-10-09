@@ -4,7 +4,8 @@
   <a href="VERSION"><img src="https://img.shields.io/badge/version-0.0.3-blue" alt="Version" /></a>
   <a href="https://pkg.go.dev/github.com/0xataru/workerpool"><img src="https://pkg.go.dev/badge/github.com/0xataru/workerpool.svg" alt="Go Reference" /></a>
   <a href="https://github.com/0xataru/workerpool/actions/workflows/ci.yml"><img src="https://github.com/0xataru/workerpool/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
-  <a href="https://goreportcard.com/report/github.com/0xataru/workerpool"><img src="https://goreportcard.com/badge/github.com/0xataru/workerpool" alt="Go Report Card" /></a>
+  <a href="https://github.com/0xataru/workerpool/actions/workflows/coverage.yml"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/0xataru/workerpool/badges/coverage.json" alt="Coverage" /></a>
+  <a href="https://scorecard.dev/viewer/?uri=github.com/0xataru/workerpool"><img src="https://api.scorecard.dev/projects/github.com/0xataru/workerpool/badge" alt="OpenSSF Scorecard" /></a>
   <a href="go.mod"><img src="https://img.shields.io/badge/go-1.23+-00ADD8?logo=go&logoColor=white" alt="Go 1.23+" /></a>
   <a href="go.mod"><img src="https://img.shields.io/badge/dependencies-none-success" alt="Zero dependencies" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue?logo=apache&logoColor=white" alt="License: Apache 2.0" /></a>
@@ -104,8 +105,14 @@ is the evidence:
 - **Concurrency is tested with barriers, not timeouts.** A worker count is
   verified by making every worker block until all of them have arrived, so the
   test cannot pass by getting lucky on a fast machine.
+- **Fuzzing.** `FuzzMap` and `FuzzStream` let the fuzzer pick input sizes,
+  worker counts and stop points, steered by coverage toward the branches random
+  sampling rarely reaches: `make fuzz`.
 - **The panic policy is tested too**, in a child process, since an unrecovered
   panic takes the test binary with it.
+
+Why each of these is there, and what the code they test looks like:
+[`docs/design.md`](docs/design.md).
 
 What this does not mean: the race detector reports races it observes, not races
 that exist. This package has no known defects and its tests are demonstrably
@@ -166,15 +173,34 @@ show that picking it costs nothing in speed.
 Full table, methodology and where each comparison is unfair:
 [`benchmarks/README.md`](benchmarks/README.md).
 
+## Recipes
+
+Retries, rate limits and the rest are deliberately not built in. Each is a few
+lines around your own `process`, and each is a tested example on
+[pkg.go.dev](https://pkg.go.dev/github.com/0xataru/workerpool#pkg-examples):
+
+| You want | How | Example |
+| --- | --- | --- |
+| Retries with backoff | wrap `process` in a retry loop | [`Map (Retry)`](https://pkg.go.dev/github.com/0xataru/workerpool#example-Map-Retry) |
+| Stop at the first error | cancel a derived context from inside `process` | [`Map (FailFast)`](https://pkg.go.dev/github.com/0xataru/workerpool#example-Map-FailFast) |
+| A timeout or Ctrl+C | pass a cancellable `ctx`; unreached inputs get `ctx.Err()` | [`Map (Cancellation)`](https://pkg.go.dev/github.com/0xataru/workerpool#example-Map-Cancellation) |
+| N calls per second | a shared `time.Ticker` every worker waits on | [`Stream (RateLimit)`](https://pkg.go.dev/github.com/0xataru/workerpool#example-Stream-RateLimit) |
+| Progress reporting | count in the `range` loop — results arrive in your goroutine | [`Stream (Progress)`](https://pkg.go.dev/github.com/0xataru/workerpool#example-Stream-Progress) |
+| Stop once you have an answer | `break` out of a `Stream` | [`Stream (EarlyExit)`](https://pkg.go.dev/github.com/0xataru/workerpool#example-Stream-EarlyExit) |
+
+For whole programs, see [`examples/tracking`](examples/tracking) (Map vs Stream
+on a mock API) and [`examples/checksum`](examples/checksum) (turning a directory
+walk into an `iter.Seq`).
+
 ## When you do not need this
 
 - **One input.** Just call the function.
 - **You only care whether anything failed**, not about per-input results —
   [`errgroup`](https://pkg.go.dev/golang.org/x/sync/errgroup) with `SetLimit` is
   a better fit.
-- **You need retries, rate limiting, priorities or metrics.** Deliberately out of
-  scope. Wrap your own `process` — a retry loop around it is a few lines and
-  keeps this API small.
+- **You need priorities, persistent queues or a long-lived pool you submit to
+  over time.** Deliberately out of scope — this package runs one batch per call.
+  Retries and rate limits are not, though: see [Recipes](#recipes).
 
 ## Requirements
 

@@ -1,10 +1,10 @@
 VERSION_FILE := VERSION
 CURRENT := $(shell tr -d '[:space:]' < $(VERSION_FILE) 2>/dev/null)
-STATICCHECK := honnef.co/go/tools/cmd/staticcheck@2025.1.1
+STATICCHECK := honnef.co/go/tools/cmd/staticcheck@2026.2.1
 
 .DEFAULT_GOAL := help
 
-.PHONY: help fmt fmt-check vet lint test stress bench cover build check bump tag clean
+.PHONY: help fmt fmt-check vet lint test stress fuzz bench cover build check bump tag clean
 
 help: ## Show available commands
 	@echo "workerpool — v$(CURRENT)"
@@ -29,6 +29,11 @@ test: ## Run the suite with the race detector
 
 stress: ## Deep randomised run; a failure prints a replayable seed
 	go test -race -count=20 -timeout 30m -run Stress ./...
+
+# go test accepts only one -fuzz target per run, so they go one after another.
+fuzz: ## Fuzz Map and Stream (FUZZTIME=1m each); failures land in testdata/fuzz
+	go test -run '^$$' -fuzz '^FuzzMap$$' -fuzztime $(or $(FUZZTIME),1m) .
+	go test -run '^$$' -fuzz '^FuzzStream$$' -fuzztime $(or $(FUZZTIME),1m) .
 
 bench: ## Benchmarks — never with -race, it distorts channel timings
 	go test -run '^$$' -bench . -benchmem ./...
