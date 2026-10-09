@@ -1,0 +1,49 @@
+name: Coverage
+
+# Publishes the coverage badge without a third-party service: the number is
+# written as a shields.io endpoint file to an orphan `badges` branch, which the
+# README badge reads straight from raw.githubusercontent.com.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # force-pushes the one-commit badges branch
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      # The library package only, as in `make cover`: the examples are package
+      # main with no tests and would drag the number down for no reason.
+      - name: measure
+        id: cover
+        run: |
+          go test -race -count=1 -coverprofile=coverage.out .
+          pct=$(go tool cover -func=coverage.out | awk '/^total:/ { sub("%", "", $3); print $3 }')
+          echo "pct=$pct" >> "$GITHUB_OUTPUT"
+          echo "Coverage of the library package: **$pct%**" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: publish badge
+        env:
+          PCT: ${{ steps.cover.outputs.pct }}
+          TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          color=$(awk -v p="$PCT" 'BEGIN { print (p >= 95 ? "brightgreen" : p >= 80 ? "green" : p >= 60 ? "yellow" : "red") }')
+          mkdir badges && cd badges
+          printf '{"schemaVersion":1,"label":"coverage","message":"%s%%","color":"%s"}\n' "$PCT" "$color" > coverage.json
+          git init -q -b badges
+          git add coverage.json
+          git -c user.name=github-actions -c user.email=github-actions@users.noreply.github.com \
+            commit -q -m "chore: coverage $PCT%"
+          git push -q --force "https://x-access-token:${TOKEN}@github.com/${REPO}.git" badges

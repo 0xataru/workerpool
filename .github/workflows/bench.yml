@@ -1,0 +1,52 @@
+name: Benchmarks
+
+# Compares the PR against its base and writes a benchstat table to the job
+# summary. Informational only: shared runners are noisy enough that a hard
+# threshold would fail on nothing, so a human reads the numbers instead.
+on:
+  pull_request:
+    paths: ['**.go', 'go.mod']
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: head
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: base
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache: false # the module has no go.sum to key a cache on
+
+      # Interleaved rather than all-base-then-all-head, so a runner that slows
+      # down halfway through skews both sides alike instead of one.
+      - name: run
+        run: |
+          for i in 1 2 3 4 5 6; do
+            for side in base head; do
+              (cd "$side" && go test -run '^$' -bench . -benchmem -benchtime 0.5s -count 1 .) >> "$side.txt"
+            done
+          done
+
+      - name: compare
+        run: |
+          go run golang.org/x/perf/cmd/benchstat@latest base.txt head.txt > benchstat.txt
+          {
+            echo '## Benchmarks: base vs this PR'
+            echo
+            echo 'Shared runners are noisy: treat differences under ~5%, or without a low p-value, as noise.'
+            echo
+            echo '```'
+            cat benchstat.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
